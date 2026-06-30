@@ -1,0 +1,6 @@
+{
+  "name": "CivicSync",
+  "description": "An AI-powered productivity and community safety companion to stay on top of tasks and report local hazards.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
