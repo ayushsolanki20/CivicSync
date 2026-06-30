@@ -178,34 +178,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           });
           // Create profile document in Firestore on first sign-in
           await ensureUserProfile(firebaseUser);
+        } else {
+          setUser(prev => (prev && prev.isLocal ? prev : null));
         }
         setAuthLoading(false);
       });
     } catch (err) {
       console.warn("Firebase Authentication failed to load subscription", err);
       setAuthLoading(false);
-    }
-
-    // Geolocation tracker for active user
-    let geoWatchId: number;
-    if (navigator.geolocation && user) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          if (user && !user.isLocal) {
-            try {
-              await updateDoc(doc(db, "users", user.uid), {
-                lastKnownLat: lat,
-                lastKnownLng: lng
-              });
-            } catch (e) {
-              console.warn("Could not save location to profile:", e);
-            }
-          }
-        },
-        (err) => console.warn("GPS watch failed:", err)
-      );
     }
 
     // Safety timeout to trigger local operator default if Firebase auth hangs
@@ -217,6 +197,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       unsubscribe();
       clearTimeout(timer);
     };
+  }, []); // Mount only
+
+  // Geolocation tracker for active user
+  useEffect(() => {
+    if (!navigator.geolocation || !user) return;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        if (user && !user.isLocal) {
+          try {
+            await updateDoc(doc(db, "users", user.uid), {
+              lastKnownLat: lat,
+              lastKnownLng: lng
+            });
+          } catch (e) {
+            console.warn("Could not save location to profile:", e);
+          }
+        }
+      },
+      (err) => console.warn("GPS watch failed:", err)
+    );
   }, [user]);
 
   // Sync notifications from Firestore in real-time
