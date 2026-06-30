@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/context";
 import { 
   AlertTriangle, 
@@ -24,44 +24,210 @@ import {
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 
-const getDepartmentContact = (dept: string) => {
+const getDepartmentContact = (dept: string, locationName?: string) => {
   const normalized = (dept || "").toLowerCase();
+  
+  // Extract city, state and postal code from locationName
+  const nameLower = (locationName || "").toLowerCase();
+  let city = "Delhi";
+  let postalCode = "";
+  
+  const pinMatch = nameLower.match(/\b\d{6}\b/);
+  if (pinMatch) {
+    postalCode = pinMatch[0];
+  }
+  
+  let state = "";
+  if (nameLower.includes("maharashtra") || nameLower.includes("mumbai") || nameLower.includes("pune")) {
+    state = "Maharashtra";
+  } else if (nameLower.includes("karnataka") || nameLower.includes("bengaluru") || nameLower.includes("bangalore")) {
+    state = "Karnataka";
+  } else if (nameLower.includes("madhya pradesh") || nameLower.includes("indore") || nameLower.includes("bhopal")) {
+    state = "Madhya Pradesh";
+  } else if (nameLower.includes("tamil nadu") || nameLower.includes("chennai")) {
+    state = "Tamil Nadu";
+  } else if (nameLower.includes("west bengal") || nameLower.includes("kolkata")) {
+    state = "West Bengal";
+  } else if (nameLower.includes("delhi")) {
+    state = "Delhi";
+  }
+  
+  if (nameLower.includes("mumbai") || nameLower.includes("bombay")) city = "Mumbai";
+  else if (nameLower.includes("bengaluru") || nameLower.includes("bangalore")) city = "Bengaluru";
+  else if (nameLower.includes("indore")) city = "Indore";
+  else if (nameLower.includes("pune")) city = "Pune";
+  else if (nameLower.includes("chennai") || nameLower.includes("madras")) city = "Chennai";
+  else if (nameLower.includes("kolkata") || nameLower.includes("calcutta")) city = "Kolkata";
+  else if (nameLower.includes("hyderabad")) city = "Hyderabad";
+  else if (nameLower.includes("ahmedabad")) city = "Ahmedabad";
+  else {
+    // Basic heuristics to grab city name
+    const parts = (locationName || "").split(",");
+    if (parts.length >= 2) {
+      const rightParts = parts.map(p => p.trim()).filter(p => {
+        const lower = p.toLowerCase();
+        return lower !== "india" && !lower.match(/\d{6}/) && lower !== "delhi" && lower !== "maharashtra" && lower !== "karnataka" && lower !== "madhya pradesh";
+      });
+      if (rightParts.length > 0) {
+        city = rightParts[rightParts.length - 1];
+      }
+    }
+  }
+  
+  if (!state) {
+    state = city === "Mumbai" ? "Maharashtra" : city === "Bengaluru" ? "Karnataka" : city === "Indore" ? "Madhya Pradesh" : city === "Pune" ? "Maharashtra" : city === "Chennai" ? "Tamil Nadu" : city === "Kolkata" ? "West Bengal" : "Delhi";
+  }
+  
+  if (!postalCode) {
+    postalCode = city === "Mumbai" ? "400001" : city === "Bengaluru" ? "560001" : city === "Indore" ? "452001" : "110001";
+  }
+
+  // Pre-configured cities templates
+  if (city === "Mumbai") {
+    if (normalized.includes("works") || normalized.includes("pwd") || normalized.includes("road") || normalized.includes("transportation")) {
+      return {
+        phone: "022-22620251 (BMC PWD Helpdesk)",
+        email: "pwdhq@mcgm.gov.in",
+        address: `Brihanmumbai Municipal Corporation (BMC) PWD Head Office, Fort, Mumbai, ${state} ${postalCode}`,
+        hours: "Mon-Sat: 9:30 AM - 6:00 PM"
+      };
+    }
+    if (normalized.includes("water") || normalized.includes("power") || normalized.includes("hydrant") || normalized.includes("utility") || normalized.includes("board")) {
+      return {
+        phone: "1916 (BMC Water Supply Tollfree)",
+        email: "watermain.swm@mcgm.gov.in",
+        address: `BMC Hydraulic Engineer Office, Municipal Offices, Fort, Mumbai, ${state} ${postalCode}`,
+        hours: "24/7 Water Supply Emergency"
+      };
+    }
+    if (normalized.includes("sanitation") || normalized.includes("garbage") || normalized.includes("trash") || normalized.includes("waste") || normalized.includes("recycling") || normalized.includes("mcd") || normalized.includes("bmc")) {
+      return {
+        phone: "022-24134515 (BMC Solid Waste Command)",
+        email: "swm.clean@mcgm.gov.in",
+        address: `BMC Solid Waste Management Dept, Municipal Offices, Fort, Mumbai, ${state} ${postalCode}`,
+        hours: "Daily: 6:00 AM - 8:00 PM"
+      };
+    }
+    if (normalized.includes("light") || normalized.includes("street") || normalized.includes("lamp") || normalized.includes("bses")) {
+      return {
+        phone: "1800-227-575 (BEST Power Helpline)",
+        email: "customercare@bestundertaking.com",
+        address: `BEST Bhavan, Colaba, Mumbai, ${state} ${postalCode}`,
+        hours: "Mon-Sat: 8:00 AM - 8:00 PM"
+      };
+    }
+  }
+
+  if (city === "Bengaluru") {
+    if (normalized.includes("works") || normalized.includes("pwd") || normalized.includes("road") || normalized.includes("transportation")) {
+      return {
+        phone: "080-22221188 (BBMP PWD Helpdesk)",
+        email: "ee.pwd@bbmp.gov.in",
+        address: `Bruhat Bengaluru Mahanagara Palike (BBMP) PWD Office, Hudson Circle, Bengaluru, ${state} ${postalCode}`,
+        hours: "Mon-Sat: 9:00 AM - 5:30 PM"
+      };
+    }
+    if (normalized.includes("water") || normalized.includes("power") || normalized.includes("hydrant") || normalized.includes("utility") || normalized.includes("board")) {
+      return {
+        phone: "1916 (BWSSB Water Tollfree)",
+        email: "waterboard@bwssb.gov.in",
+        address: `Bangalore Water Supply and Sewerage Board (BWSSB), Cauvery Bhavan, Bengaluru, ${state} ${postalCode}`,
+        hours: "24/7 Water Board Helpline"
+      };
+    }
+    if (normalized.includes("sanitation") || normalized.includes("garbage") || normalized.includes("trash") || normalized.includes("waste") || normalized.includes("recycling") || normalized.includes("mcd") || normalized.includes("bbmp")) {
+      return {
+        phone: "080-22660000 (BBMP Waste Management)",
+        email: "swm.cleanup@bbmp.gov.in",
+        address: `BBMP Solid Waste Management Head Office, N.R. Square, Bengaluru, ${state} ${postalCode}`,
+        hours: "Daily: 6:30 AM - 7:30 PM"
+      };
+    }
+    if (normalized.includes("light") || normalized.includes("street") || normalized.includes("lamp") || normalized.includes("bses")) {
+      return {
+        phone: "1912 (BESCOM Electricity Care)",
+        email: "customercare@bescom.co.in",
+        address: `BESCOM Corporate Office, K.R. Circle, Bengaluru, ${state} ${postalCode}`,
+        hours: "Mon-Sat: 8:00 AM - 8:00 PM"
+      };
+    }
+  }
+
+  if (city === "Indore") {
+    if (normalized.includes("works") || normalized.includes("pwd") || normalized.includes("road") || normalized.includes("transportation")) {
+      return {
+        phone: "0731-2535555 (IMC PWD Division)",
+        email: "ee.pwd@imcindore.org.in",
+        address: `Indore Municipal Corporation (IMC) PWD Office, Shivaji Market, Indore, ${state} ${postalCode}`,
+        hours: "Mon-Sat: 10:00 AM - 5:00 PM"
+      };
+    }
+    if (normalized.includes("water") || normalized.includes("power") || normalized.includes("hydrant") || normalized.includes("utility") || normalized.includes("board")) {
+      return {
+        phone: "0731-2430000 (IMC Water Works)",
+        email: "waterworkshq@imcindore.org.in",
+        address: `IMC Water Supply Department, Shivaji Market, Indore, ${state} ${postalCode}`,
+        hours: "24/7 Water Division Hotline"
+      };
+    }
+    if (normalized.includes("sanitation") || normalized.includes("garbage") || normalized.includes("trash") || normalized.includes("waste") || normalized.includes("recycling") || normalized.includes("mcd") || normalized.includes("imc")) {
+      return {
+        phone: "0731-2435481 (IMC Clean City Division)",
+        email: "swm.clean@imcindore.org.in",
+        address: `IMC Sanitation and Waste Management Office, Shivaji Market, Indore, ${state} ${postalCode}`,
+        hours: "Daily: 6:00 AM - 8:00 PM"
+      };
+    }
+    if (normalized.includes("light") || normalized.includes("street") || normalized.includes("lamp") || normalized.includes("bses")) {
+      return {
+        phone: "1912 (MP West Zone Power Care)",
+        email: "customercare@mpwz.co.in",
+        address: `MP West Zone Electricity Office, Pologround, Indore, ${state} ${postalCode}`,
+        hours: "Mon-Sat: 8:00 AM - 8:00 PM"
+      };
+    }
+  }
+
+  // Dynamic Generic Fallback for other Indian cities (Chennai, Kolkata, Pune, Jaipur, etc.)
+  const corpName = city === "Delhi" ? "MCD" : city === "Kolkata" ? "KMC" : city === "Chennai" ? "GCC" : city === "Pune" ? "PMC" : `${city} Municipal Corporation`;
+  const emailDomain = city.toLowerCase().replace(/\s+/g, "") + "mc.gov.in";
+
   if (normalized.includes("works") || normalized.includes("pwd") || normalized.includes("road") || normalized.includes("transportation")) {
     return {
-      phone: "011-23490269 (PWD Helpdesk)",
-      email: "pwdhqdelhi@mail.delhi.gov.in",
-      address: "Public Works Department Headquarter, MSO Building, I.P. Estate, New Delhi, Delhi 110002",
-      hours: "Mon-Sat: 9:00 AM - 6:00 PM"
+      phone: "1800-345-0011 (Municipal PWD Care)",
+      email: `pwd@${emailDomain}`,
+      address: `Public Works Department Office, ${corpName} HQ, ${city}, ${state} ${postalCode}`,
+      hours: "Mon-Sat: 10:00 AM - 5:30 PM"
     };
   }
   if (normalized.includes("water") || normalized.includes("power") || normalized.includes("hydrant") || normalized.includes("utility") || normalized.includes("board")) {
     return {
-      phone: "1916 (Delhi Jal Board Tollfree)",
-      email: "djbportal@delhi.gov.in",
-      address: "Varunalaya Phase-II, Jhandewalan, Karol Bagh, New Delhi, Delhi 110005",
-      hours: "24/7 Water Emergency Hotline"
+      phone: "1916 (Municipal Water Works)",
+      email: `water@${emailDomain}`,
+      address: `Municipal Water Board & Sewerage Office, ${corpName} Buildings, ${city}, ${state} ${postalCode}`,
+      hours: "24/7 Water Division Hotline"
     };
   }
-  if (normalized.includes("sanitation") || normalized.includes("garbage") || normalized.includes("trash") || normalized.includes("waste") || normalized.includes("recycling") || normalized.includes("mcd")) {
+  if (normalized.includes("sanitation") || normalized.includes("garbage") || normalized.includes("trash") || normalized.includes("waste") || normalized.includes("recycling") || normalized.includes("mcd") || normalized.includes("health")) {
     return {
-      phone: "011-23220010 (MCD Solid Waste Control)",
-      email: "cleanup@mcd.nic.in",
-      address: "Municipal Corporation Center, Civic Centre, Minto Road, New Delhi, Delhi 110002",
+      phone: "1800-345-1234 (Municipal Solid Waste Cell)",
+      email: `cleanup@${emailDomain}`,
+      address: `Solid Waste Management & Sanitation Dept, ${corpName} HQ, ${city}, ${state} ${postalCode}`,
       hours: "Daily: 6:00 AM - 8:00 PM"
     };
   }
   if (normalized.includes("light") || normalized.includes("street") || normalized.includes("lamp") || normalized.includes("bses")) {
     return {
-      phone: "19123 (BSES Yamuna Power)",
-      email: "brpl.customercare@relianceada.com",
-      address: "BSES Bhawan, Nehru Place, New Delhi, Delhi 110019",
+      phone: "1912 (State Electricity Helpline)",
+      email: `streetlights@${emailDomain}`,
+      address: `State Electricity Distribution & Streetlighting Div, ${city}, ${state} ${postalCode}`,
       hours: "Mon-Sat: 8:00 AM - 8:00 PM"
     };
   }
   return {
-    phone: "1800-11-0093",
-    email: "civic.helpline@delhi.gov.in",
-    address: "Delhi Secretariat, Players Building, I.P. Estate, New Delhi, Delhi 110002",
+    phone: "1800-11-0093 (General Civic Helpline)",
+    email: `helpline@${emailDomain}`,
+    address: `Municipal Secretariat Office, ${corpName} Head Office, ${city}, ${state} ${postalCode}`,
     hours: "Mon-Fri: 9:30 AM - 6:00 PM"
   };
 };
@@ -81,6 +247,39 @@ export default function DashboardFeedPage() {
   const [copiedToast, setCopiedToast] = useState(false);
   const [flagTargetId, setFlagTargetId] = useState<string | null>(null);
   const [flagProofImage, setFlagProofImage] = useState<string | null>(null);
+  const [contactLoading, setContactLoading] = useState(false);
+  const [currentContact, setCurrentContact] = useState<any>(null);
+
+  useEffect(() => {
+    if (activeComplaintDetails) {
+      if (activeComplaintDetails.municipalContact) {
+        setCurrentContact(activeComplaintDetails.municipalContact);
+      } else {
+        setContactLoading(true);
+        fetch("/api/gemini/get-contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            locationName: activeComplaintDetails.locationName,
+            department: activeComplaintDetails.department
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          setCurrentContact(data);
+          setContactLoading(false);
+        })
+        .catch(err => {
+          console.error("Error fetching dynamic municipal contact:", err);
+          const fallback = getDepartmentContact(activeComplaintDetails.department, activeComplaintDetails.locationName);
+          setCurrentContact(fallback);
+          setContactLoading(false);
+        });
+      }
+    } else {
+      setCurrentContact(null);
+    }
+  }, [activeComplaintDetails]);
 
   const totalReported = complaints.length;
   const totalResolved = complaints.filter(c => c.status === "Resolved" || c.status === "Closed").length;
@@ -377,24 +576,49 @@ export default function DashboardFeedPage() {
 
                 {/* Department Contacts & Actions Section */}
                 {activeComplaintDetails.officialLiaisonDraft && (() => {
-                  const contact = getDepartmentContact(activeComplaintDetails.department);
+                  if (contactLoading) {
+                    return (
+                      <div className="bg-[#4285F4]/5 border border-[#4285F4]/20 p-4 rounded-2xl mt-3 space-y-3 animate-pulse">
+                        <div className="flex items-center justify-between border-b border-[#4285F4]/10 pb-1.5">
+                          <span className="text-[9px] font-bold text-[#4285F4] uppercase tracking-widest flex items-center gap-1.5">
+                            <Activity className="w-4 h-4" /> Nearest Municipal Dispatch Office
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 text-center py-4">
+                          Looking up nearest dispatch office details dynamically via AI...
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const contact = currentContact || getDepartmentContact(activeComplaintDetails.department, activeComplaintDetails.locationName);
                   const mailtoUrl = `mailto:${contact.email}?subject=${encodeURIComponent(
                     activeComplaintDetails.officialLiaisonDraft.subject || "Civic Hazard Alert"
                   )}&body=${encodeURIComponent(activeComplaintDetails.officialLiaisonDraft.body || "")}`;
+                  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((contact.name || "Municipal Office") + " " + contact.address)}`;
+
                   return (
                     <div className="bg-[#4285F4]/5 border border-[#4285F4]/20 p-4 rounded-2xl mt-3 space-y-3">
                       <div className="flex items-center justify-between border-b border-[#4285F4]/10 pb-1.5">
                         <span className="text-[9px] font-bold text-[#4285F4] uppercase tracking-widest flex items-center gap-1.5">
-                          <Activity className="w-4 h-4" /> Nearest Municipal Dispatch Office
+                          <Activity className="w-4 h-4" /> {contact.name || "Nearest Municipal Dispatch Office"}
                         </span>
                         <span className="text-[8px] bg-[#4285F4]/10 text-[#4285F4] font-bold px-1.5 py-0.5 rounded-full">
                           Contact Info
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-3 text-[10px]">
-                        <div>
+                        <div className="col-span-2">
                           <p className="text-[8px] font-bold text-slate-400 uppercase">Office Address</p>
                           <p className="text-slate-800 font-medium font-sans mt-0.5 leading-tight">{contact.address}</p>
+                          <a 
+                            href={mapsUrl}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-[9px] text-[#4285F4] hover:underline font-semibold flex items-center gap-0.5 mt-1 animate-fade-in"
+                          >
+                            <MapPin className="w-3 h-3 text-[#4285F4]" /> View on Google Maps
+                          </a>
                         </div>
                         <div>
                           <p className="text-[8px] font-bold text-slate-400 uppercase">Hotline Number</p>
@@ -404,7 +628,7 @@ export default function DashboardFeedPage() {
                           <p className="text-[8px] font-bold text-slate-400 uppercase">Support Email</p>
                           <p className="text-[#4285F4] font-semibold font-mono mt-0.5">{contact.email}</p>
                         </div>
-                        <div>
+                        <div className="col-span-2">
                           <p className="text-[8px] font-bold text-slate-400 uppercase">Operational Hours</p>
                           <p className="text-slate-800 font-medium mt-0.5">{contact.hours}</p>
                         </div>
